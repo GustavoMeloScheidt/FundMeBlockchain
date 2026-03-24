@@ -1,22 +1,32 @@
-# Simple Storage Solidity Project
+# FundMe Blockchain
 
-This is a very small project I built while studying blockchains and Solidity to better understand the basic foundations of smart contracts.
+This is a small Solidity project I built to practice blockchain basics like funding contracts, enforcing a minimum USD amount using price feeds, and handling withdrawals with access control.
 
 ## What this project shows
 
-- How to store and retrieve a number on-chain using a simple contract (`SimpleStorage.sol`). [file:22]
-- How to work with structs, dynamic arrays, and mappings to store people and their favorite numbers. [file:22]
-- How one contract can deploy and interact with multiple instances of another contract using a factory pattern (`StorageFactory-2.sol`). [file:21]
-- How to use inheritance and function overriding to change behavior in a child contract (`AddFiveStorage-3.sol` adds 5 before storing). [file:23]
+- How to let users fund a contract in ETH with a minimum USD value enforced on-chain.
+- How to use a Chainlink price feed to convert ETH to USD with a library (`PriceConverter`). 
+- How to track each funder and how much they sent using mappings and arrays. 
+- How to restrict withdrawals so only the contract owner can withdraw all funds safely.
+- How `fallback` and `receive` functions can redirect plain ETH transfers into the main funding logic. 
 
 ## Contracts
 
-- `SimpleStorage.sol`: Basic storage contract with `store`, `retrieve`, and `addPerson` functions. [file:22]
-- `StorageFactory-2.sol`: Deploys multiple `SimpleStorage` contracts and lets you store and read values from them. [file:21]
-- `AddFiveStorage-3.sol`: Inherits from `SimpleStorage` and overrides `store` so it saves the given number plus 5. [file:23]
+- `FundMe.sol`:
+  - Uses `PriceConverter` so `msg.value` can be converted to USD. 
+  - Keeps a `mapping(address => uint256)` of how much each address funded and an array of all funders.
+  - Requires a minimum of 5 USD worth of ETH (`MINIMUM_USD`) to accept a funding transaction. 
+  - Has an `onlyOwner` modifier and a `withdraw` function that resets funders and sends the full balance to the owner. 
+  - Implements `fallback` and `receive` to call `fund()` whenever ETH is sent directly.
+
+- `PriceConverter-2.sol`:
+  - Library that reads the ETH/USD price from a Chainlink `AggregatorV3Interface` on Sepolia. 
+  - Provides `getPrice` and `getConversionRate` to turn an ETH amount into its USD value with 18 decimals. 
 
 ## How to run
 
-1. Open the project in a Solidity environment (e.g. Remix or Hardhat).
-2. Compile the contracts with Solidity `0.8.19`. [file:22][file:23]
-3. Deploy `SimpleStorage`, `StorageFactory`, or `AddFiveStorage` and call the functions to see how storage and interactions work. [file:21][file:22][file:23]
+1. Open the project in a Solidity environment (I used Remix). 
+2. Make sure the Chainlink price feed address matches the network (this code uses Sepolia). 
+3. Compile the contracts with Solidity `^0.8.18`. 
+4. Deploy `FundMe` and call `fund()` with some ETH meeting the minimum USD value. 
+5. As the owner (deployer), call `withdraw()` to collect all funds from the contract. 
